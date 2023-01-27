@@ -92,6 +92,11 @@ void ATP_ThirdPersonCharacter::BeginPlay() {
 
 
 	HealthComponent->OnHealtToZero.AddDynamic(this, &ATP_ThirdPersonCharacter::StopCharacter);
+
+
+	StaminaLost = (Stamina * LoseStaminaPercentage) /100;
+	StaminaRecover = (Stamina * RecoverStaminaPercentage) / 100;
+	CurrentStamina = Stamina;
 }
 
 void ATP_ThirdPersonCharacter::OnConstruction(const FTransform & Transform) {
@@ -108,6 +113,29 @@ void ATP_ThirdPersonCharacter::Tick(float DeltaTime) {
 	CrouchTimeline.TickTimeline(DeltaTime);
 	
 	AutomaticFire(DeltaTime);
+	
+	if(CanRun)
+	{
+		Run(DeltaTime);
+		
+	}
+	else if(!mustRecover)
+	{
+		if(CurrentStamina < Stamina)
+		{
+			CurrentWaitTimerRecover+= DeltaTime;
+			
+			if(CurrentWaitTimerRecover >= WaitTimerRecover)
+			{
+				RecoverStamina(DeltaTime);
+			}
+		}
+	}
+
+	if(mustRecover)
+	{
+		RecoverStamina(DeltaTime);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -149,6 +177,9 @@ void ATP_ThirdPersonCharacter::SetupPlayerInputComponent(class UInputComponent* 
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATP_ThirdPersonCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ATP_ThirdPersonCharacter::MoveRight);
+
+	PlayerInputComponent->BindAction("Run",IE_Pressed,this,&ATP_ThirdPersonCharacter::TryRun);
+	PlayerInputComponent->BindAction("Run",IE_Released,this,&ATP_ThirdPersonCharacter::RunOut);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -262,6 +293,75 @@ void ATP_ThirdPersonCharacter::AimOut() {
 	}
 	AimTimeline.Reverse();
 	OnCharacterStopAim.Broadcast();
+}
+
+void ATP_ThirdPersonCharacter::TryRun()
+{
+	
+	
+	if(CurrentStamina >= 0)
+	{
+		CanRun = true;
+		GetCharacterMovement()->MaxWalkSpeed = RunningVelocity;
+	}
+}
+
+void ATP_ThirdPersonCharacter::RunOut()
+{
+	CanRun = false;
+}
+
+void ATP_ThirdPersonCharacter::Run(float DeltaTime)
+{
+	if(GetCharacterMovement()->Velocity.Size()<=0)
+	{
+		return;
+	}
+	
+	currentTimerRun += DeltaTime;
+	
+	if (currentTimerRun >=1)
+	{
+		currentTimerRun =0;
+		CurrentStamina -= StaminaLost;
+		GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(CurrentStamina));
+		
+		if(CurrentStamina <=0)
+		{
+			CurrentWaitTimerRecover = 0;
+			GetCharacterMovement()-> MaxWalkSpeed = 0;
+			CanRun = false;
+			bCanMove = false;
+			mustRecover = true;
+			
+		}
+	}
+	
+	
+}
+
+void ATP_ThirdPersonCharacter::TryRecoverStamina()
+{
+	
+}
+
+void ATP_ThirdPersonCharacter::RecoverStamina(float DeltaTime)
+{
+	currentTimerRun += DeltaTime;
+	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Yellow, FString::SanitizeFloat(CurrentStamina));
+	if(currentTimerRun >= 1)
+	{
+		currentTimerRun =0;
+		CurrentStamina += StaminaRecover;
+		if(CurrentStamina >= Stamina)
+		{
+			CurrentStamina = Stamina;
+			CurrentWaitTimerRecover = 0;
+			GetCharacterMovement() -> MaxWalkSpeed = 600;
+			bCanMove = true;
+			
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

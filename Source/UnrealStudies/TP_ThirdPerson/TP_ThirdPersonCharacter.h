@@ -102,6 +102,22 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
 	float MaxThrowLength = 1300.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float RunningVelocity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running",meta = (ClampMin =0,ClampMax =100))
+	float Stamina = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float LoseStaminaPercentage ;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float RecoverTimerRunning;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float RecoverStaminaPercentage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float CurrentStamina;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
+	float WaitTimerRecover;	
 
 	UPROPERTY(EditAnywhere, Category = "Timeline")
 	UCurveFloat* MovementCurve;
@@ -148,6 +164,22 @@ private:
 	bool bIsUsingWeapon = false;
 
 	bool bCanMove = false;
+
+	bool isRunning = false;
+
+	bool CanRun = false;
+
+	bool mustRecover = false;
+	
+	float StaminaLost;
+
+	float currentTimerRun;
+	
+	float StaminaRecover;
+
+	float CurrentWaitTimerRecover;
+	
+	
 	
 	/** Timeline use for aiming: change the visual from 360 to right shoulder*/
 	FTimeline AimTimeline;
@@ -191,6 +223,7 @@ protected:
 
 	/** Called for side to side input */
 	void MoveRight(float Value);
+	
 
 	/** 
 	 * Called via input to turn at a given rate. 
@@ -223,6 +256,13 @@ protected:
 	void AimOutArch();
 	void AimIn();
 	void AimOut();
+
+	//Mechanic :Run
+	void TryRun();
+	void RunOut();
+	void Run(float DeltaTime);
+	void TryRecoverStamina();
+	void RecoverStamina(float DeltaTime);
 
 	// Mechanic: Reload
 	void ReloadWeapon();
